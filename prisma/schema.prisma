@@ -1,0 +1,119 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===================================================================
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  password      String
+  name          String
+  image         String?
+  phone         String?
+  streetAddress String?
+  postalCode    String?
+  city          String?
+  country       String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  orders        OrderProduct[]
+}
+
+model Product {
+  id          String           @id @default(cuid())
+  name        String
+  description String?
+  image       String?
+  price       Float
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  variants    ProductVariant[]
+  category    Category         @relation(fields: [categoryId], references: [id])
+  categoryId  String
+  order       OrderProduct[]
+}
+
+model Category {
+  id       String    @id @default(cuid())
+  name     String
+  order    Int       @default(autoincrement())
+  products Product[]
+}
+
+model Order {
+  id            String         @id @default(uuid())
+  paid          Boolean        @default(false)
+  subTotal      Float
+  deliveryFee   Float
+  totalPrice    Float
+  userEmail     String
+  phone         String
+  streetAddress String
+  postalCode    String
+  city          String
+  country       String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  products      OrderProduct[]
+}
+
+model OrderProduct {
+  id       String @id @default(cuid())
+  quantity Int
+
+  Order     Order   @relation(fields: [orderId], references: [id])
+  orderId   String
+  User      User?   @relation(fields: [userId], references: [id])
+  userId    String?
+  Product   Product @relation(fields: [productId], references: [id])
+  productId String
+}
+
+model ProductVariant {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  memoryId  String
+  memory    Memory  @relation(fields: [memoryId], references: [id])
+
+  colorId   String
+  color     Color   @relation(fields: [colorId], references: [id])
+
+  price     Float?
+  sku       String? @unique
+  stock     Int     @default(0)
+  isActive  Boolean @default(true)
+
+  @@unique([productId, memoryId, colorId])
+  @@index([productId])
+  @@index([memoryId])
+  @@index([colorId])
+}
+
+model Memory {
+  id       String           @id @default(cuid())
+  name     String           @unique
+  order    Int?
+  variants ProductVariant[]
+}
+
+model Color {
+  id       String           @id @default(cuid())
+  name     String           @unique
+  order    Int?
+  variants ProductVariant[]
+}
